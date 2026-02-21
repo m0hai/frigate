@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - dev
+      - dev_edo
       - master
     paths-ignore:
       - "docs/**"
