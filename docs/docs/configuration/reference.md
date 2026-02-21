@@ -215,11 +215,16 @@ birdseye:
   # Optional: Encoding quality of the mpeg1 feed (default: shown below)
   # 1 is the highest quality, and 31 is the lowest. Lower quality feeds utilize less CPU resources.
   quality: 8
-  # Optional: Mode of the view. Available options are: objects, motion, and continuous
-  #   objects - cameras are included if they have had a tracked object within the last 30 seconds
+  # Optional: Mode of the view. Available options are: objects, active_objects, motion, and continuous
+  #   objects - cameras are included if they have had any tracked object within the last 30 seconds
+  #   active_objects - cameras are included if they have had a non-stationary object within the last 30 seconds
   #   motion - cameras are included if motion was detected in the last 30 seconds
   #   continuous - all cameras are included always
   mode: objects
+  # Optional: Override mode per object class. Only 'objects' and 'active_objects' apply per-label.
+  # modes_by_label:
+  #   person: active_objects
+  #   car: objects
   # Optional: Threshold for camera activity to stop showing camera (default: shown below)
   inactivity_threshold: 30
   # Optional: Configure the birdseye layout

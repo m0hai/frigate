@@ -14,7 +14,21 @@ Birdseye offers different modes to customize which cameras show under which circ
 
 - **continuous:** All cameras are always included
 - **motion:** Cameras that have detected motion within the last 30 seconds are included
-- **objects:** Cameras that have tracked an active object within the last 30 seconds are included
+- **objects:** Cameras that have any tracked object (including stationary) within the last 30 seconds are included
+- **active_objects:** Cameras that have a non-stationary/active object within the last 30 seconds are included
+
+### Per-object class modes
+
+You can override the mode for specific object classes using `modes_by_label`. This allows different trigger criteria for different object types. For example, show the camera when there is any car (including parked), but only when a person is actively moving:
+
+```yaml
+birdseye:
+  enabled: True
+  mode: objects  # default for object classes not in modes_by_label
+  modes_by_label:
+    person: active_objects  # only show when person is moving
+    car: objects            # show when any car is present (including stationary)
+```
 
 ### Custom Birdseye Icon
 

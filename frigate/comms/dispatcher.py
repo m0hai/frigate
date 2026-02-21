@@ -512,7 +512,7 @@ class Dispatcher:
     def _on_birdseye_mode_command(self, camera_name: str, payload: str) -> None:
         """Callback for birdseye mode topic."""
 
-        if payload not in ["CONTINUOUS", "MOTION", "OBJECTS"]:
+        if payload not in ["CONTINUOUS", "MOTION", "OBJECTS", "ACTIVE_OBJECTS"]:
             logger.info(f"Invalid birdseye_mode command: {payload}")
             return
 

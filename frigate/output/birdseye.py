@@ -272,7 +272,6 @@ class BirdsEyeFrameManager:
         stop_event: mp.Event,
     ):
         self.config = config
-        self.mode = config.birdseye.mode
         width, height = get_canvas_shape(config.birdseye.width, config.birdseye.height)
         self.frame_shape = (height, width)
         self.yuv_shape = (height * 3 // 2, width)
@@ -371,15 +370,40 @@ class BirdsEyeFrameManager:
             channel_dims,
         )
 
-    def camera_active(self, mode, object_box_count, motion_box_count):
+    def camera_active(
+        self,
+        birdseye_config,
+        current_tracked_objects: list[dict[str, Any]],
+        motion_box_count: int,
+    ) -> bool:
+        """Determine if a camera should be shown in birdseye based on config and objects."""
+        mode = birdseye_config.mode
+        modes_by_label = birdseye_config.modes_by_label or {}
+
         if mode == BirdseyeModeEnum.continuous:
             return True
 
         if mode == BirdseyeModeEnum.motion and motion_box_count > 0:
             return True
 
-        if mode == BirdseyeModeEnum.objects and object_box_count > 0:
-            return True
+        # Object-based modes: check per object class if modes_by_label is set
+        if modes_by_label or mode in (
+            BirdseyeModeEnum.objects,
+            BirdseyeModeEnum.active_objects,
+        ):
+            for obj in current_tracked_objects:
+                label = obj.get("label")
+                if not label:
+                    continue
+                effective_mode = modes_by_label.get(label, mode)
+                if effective_mode == BirdseyeModeEnum.objects:
+                    return True  # any tracked object (including stationary)
+                if (
+                    effective_mode == BirdseyeModeEnum.active_objects
+                    and not obj.get("stationary", True)
+                ):
+                    return True  # active (non-stationary) object
+        return False
 
     def update_frame(self, frame: Optional[np.ndarray] = None) -> bool:
         """
@@ -684,7 +708,7 @@ class BirdsEyeFrameManager:
     def update(
         self,
         camera: str,
-        object_count: int,
+        current_tracked_objects: list[dict[str, Any]],
         motion_count: int,
         frame_time: float,
         frame: np.ndarray,
@@ -706,7 +730,11 @@ class BirdsEyeFrameManager:
         # update the last active frame for the camera
         self.cameras[camera]["current_frame"] = frame.copy()
         self.cameras[camera]["current_frame_time"] = frame_time
-        if self.camera_active(camera_config.birdseye.mode, object_count, motion_count):
+        if self.camera_active(
+            camera_config.birdseye,
+            current_tracked_objects,
+            motion_count,
+        ):
             self.cameras[camera]["last_active_frame"] = frame_time
 
         now = datetime.datetime.now().timestamp()
@@ -807,7 +835,7 @@ class Birdseye:
 
         if self.birdseye_manager.update(
             camera,
-            len([o for o in current_tracked_objects if not o["stationary"]]),
+            current_tracked_objects,
             len(motion_boxes),
             frame_time,
             frame,

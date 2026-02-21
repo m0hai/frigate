@@ -225,6 +225,94 @@ class TestConfig(unittest.TestCase):
             frigate_config.cameras["back"].birdseye.mode is BirdseyeModeEnum.continuous
         )
 
+    def test_birdseye_modes_by_label(self):
+        """Test birdseye modes_by_label configuration."""
+        config = {
+            "mqtt": {"host": "mqtt"},
+            "birdseye": {
+                "enabled": True,
+                "mode": "objects",
+                "modes_by_label": {"person": "active_objects", "car": "objects"},
+            },
+            "cameras": {
+                "back": {
+                    "ffmpeg": {
+                        "inputs": [
+                            {"path": "rtsp://10.0.0.1:554/video", "roles": ["detect"]}
+                        ]
+                    },
+                    "detect": {
+                        "height": 1080,
+                        "width": 1920,
+                        "fps": 5,
+                    },
+                }
+            },
+        }
+
+        frigate_config = FrigateConfig(**config)
+        assert frigate_config.birdseye.modes_by_label == {
+            "person": BirdseyeModeEnum.active_objects,
+            "car": BirdseyeModeEnum.objects,
+        }
+
+    def test_birdseye_modes_by_label_camera_override(self):
+        """Test birdseye modes_by_label at camera level."""
+        config = {
+            "mqtt": {"host": "mqtt"},
+            "birdseye": {"enabled": True, "mode": "objects"},
+            "cameras": {
+                "back": {
+                    "ffmpeg": {
+                        "inputs": [
+                            {"path": "rtsp://10.0.0.1:554/video", "roles": ["detect"]}
+                        ]
+                    },
+                    "detect": {
+                        "height": 1080,
+                        "width": 1920,
+                        "fps": 5,
+                    },
+                    "birdseye": {
+                        "modes_by_label": {"person": "active_objects"},
+                    },
+                }
+            },
+        }
+
+        frigate_config = FrigateConfig(**config)
+        assert frigate_config.cameras["back"].birdseye.modes_by_label == {
+            "person": BirdseyeModeEnum.active_objects,
+        }
+
+    def test_birdseye_modes_by_label_invalid(self):
+        """Test that modes_by_label only accepts objects and active_objects."""
+        config = {
+            "mqtt": {"host": "mqtt"},
+            "birdseye": {
+                "enabled": True,
+                "mode": "objects",
+                "modes_by_label": {"person": "motion"},
+            },
+            "cameras": {
+                "back": {
+                    "ffmpeg": {
+                        "inputs": [
+                            {"path": "rtsp://10.0.0.1:554/video", "roles": ["detect"]}
+                        ]
+                    },
+                    "detect": {
+                        "height": 1080,
+                        "width": 1920,
+                        "fps": 5,
+                    },
+                }
+            },
+        }
+
+        with self.assertRaises(ValidationError):
+            FrigateConfig(**config)
+
     def test_override_tracked_objects(self):
         config = {
             "mqtt": {"host": "mqtt"},
